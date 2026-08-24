@@ -107,11 +107,31 @@ const elements = {
   audioBeepToggle: document.getElementById('audioBeepToggle')
 };
 
-// Audio Synthesizer Context for Chime Alert
+// Custom Audio File (`alert.webm` from YouTube)
+const customAlertAudio = new Audio('alert.webm');
+customAlertAudio.preload = 'auto';
+
+function playAlertSound() {
+  if (!state.audioBeepEnabled) return;
+  try {
+    customAlertAudio.currentTime = 0;
+    const playPromise = customAlertAudio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.warn("Custom audio playback failed, falling back to synthesizer chime:", error);
+        playAlertChime();
+      });
+    }
+  } catch (e) {
+    console.warn("Audio play error:", e);
+    playAlertChime();
+  }
+}
+
+// Audio Synthesizer Fallback Context for Chime Alert
 let audioCtx = null;
 
 function playAlertChime() {
-  if (!state.audioBeepEnabled) return;
   try {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -140,7 +160,7 @@ function playAlertChime() {
 }
 
 // ==============================================================================
-// SPEECH SYNTHESIS ALERT MANAGER
+// SPEECH & SOUND ALERT MANAGER
 // ==============================================================================
 function triggerVoiceAlert(message) {
   const now = Date.now();
@@ -148,10 +168,10 @@ function triggerVoiceAlert(message) {
     return;
   }
 
-  // Play audio chime
-  playAlertChime();
+  // Play custom alert sound
+  playAlertSound();
 
-  // Trigger TTS
+  // Trigger TTS in parallel if enabled
   if (state.voiceAlertEnabled && 'speechSynthesis' in window) {
     window.speechSynthesis.cancel(); // Cancel any ongoing speech
     const utterance = new SpeechSynthesisUtterance(message);
@@ -159,7 +179,6 @@ function triggerVoiceAlert(message) {
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    // Optional: pick natural sounding English voice
     const voices = window.speechSynthesis.getVoices();
     const englishVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Siri')));
     if (englishVoice) {
@@ -167,8 +186,9 @@ function triggerVoiceAlert(message) {
     }
 
     window.speechSynthesis.speak(utterance);
-    state.lastSpeechTime = now;
   }
+
+  state.lastSpeechTime = now;
 }
 
 // ==============================================================================

@@ -88,11 +88,12 @@ def ensure_model_file(model_path: str, model_url: str):
 # ==============================================================================
 class VoiceAlertManager:
     """
-    Manages non-blocking text-to-speech alerts using a dedicated background thread.
-    Prevents OpenCV main capture loop stutter and eliminates audio queue congestion.
+    Manages non-blocking text-to-speech and audio alerts using a dedicated background thread.
+    Prevents OpenCV main capture loop stutter and plays custom audio alerts.
     """
-    def __init__(self, speech_cooldown: float = 4.0):
+    def __init__(self, speech_cooldown: float = 4.0, sound_file: str = "alert.webm"):
         self.speech_cooldown = speech_cooldown
+        self.sound_file = sound_file
         self.alert_queue: queue.Queue = queue.Queue(maxsize=1)
         self.is_running = True
         self.last_speech_time = 0.0
@@ -102,34 +103,45 @@ class VoiceAlertManager:
         self.worker_thread.start()
 
     def _speech_worker(self):
-        """Background worker thread running the pyttsx3 speech loop."""
+        """Background worker thread running sound playback and pyttsx3 speech loop."""
         try:
             engine = pyttsx3.init()
             engine.setProperty('rate', 165)    # Natural speech speed
             engine.setProperty('volume', 1.0)  # Max volume
         except Exception as e:
             print(f"[ERROR] Failed to initialize TTS engine: {e}")
-            return
+            engine = None
 
         while self.is_running:
             try:
-                # Wait for next alert message with a short timeout to allow clean shutdown
                 message = self.alert_queue.get(timeout=0.2)
                 if message is None:
                     break
                 
-                engine.say(message)
-                engine.runAndWait()
+                # 1. Play custom sound file if exists
+                if os.path.exists(self.sound_file):
+                    try:
+                        # On macOS, afplay plays audio instantly in background
+                        subprocess.run(["afplay", self.sound_file], timeout=5)
+                    except Exception as e:
+                        print(f"[WARNING] afplay audio playback failed: {e}")
+
+                # 2. Voice alert fallback/companion
+                if engine is not None:
+                    engine.say(message)
+                    engine.runAndWait()
+
                 self.alert_queue.task_done()
             except queue.Empty:
                 continue
             except Exception as e:
-                print(f"[ERROR] Error during TTS playback: {e}")
+                print(f"[ERROR] Error during audio/TTS playback: {e}")
 
-        try:
-            engine.stop()
-        except Exception:
-            pass
+        if engine is not None:
+            try:
+                engine.stop()
+            except Exception:
+                pass
 
     def trigger_alert(self, message: str) -> bool:
         """
