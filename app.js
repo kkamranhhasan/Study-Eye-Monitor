@@ -22,7 +22,7 @@ const CONFIG = {
   RIGHT_IRIS: [473, 474, 475, 476],
 
   ALERT_MESSAGE: "Wake up and focus on studying!",
-  SPEECH_COOLDOWN_MS: 3500
+  SPEECH_COOLDOWN_MS: 2000
 };
 
 // ==============================================================================
@@ -35,7 +35,7 @@ const state = {
   
   // User Configurable Parameters
   earThreshold: 0.20,
-  sleepLimitSeconds: 1.5,
+  sleepLimitSeconds: 0.8,
   voiceAlertEnabled: true,
   audioBeepEnabled: true,
 
