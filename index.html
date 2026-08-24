@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyEye AI – Automated Real-Time Study Focus & Drowsiness Monitor</title>
+  <meta name="description" content="AI-powered real-time study focus and drowsiness monitor using MediaPipe Face Mesh and Eye Aspect Ratio (EAR) algorithms. Runs 100% in your browser.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- MediaPipe Face Mesh & Camera Utils via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <!-- Header Bar -->
+  <header class="app-header">
+    <div class="logo-area">
+      <div class="logo-icon">
+        <i class="fa-solid fa-eye"></i>
+      </div>
+      <div>
+        <h1 class="brand-title">StudyEye <span>AI</span></h1>
+        <p class="brand-subtitle">Real-Time Attention & Drowsiness Telemetry</p>
+      </div>
+    </div>
+    
+    <div class="header-badges">
+      <div class="status-pill status-ready" id="systemStatusBadge">
+        <span class="status-dot"></span>
+        <span id="systemStatusText">Ready to Start</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="testVoiceBtn" title="Test voice alert">
+        <i class="fa-solid fa-volume-high"></i> Test Voice
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="main-container">
+    <!-- Left Column: Video Feed & Live HUD -->
+    <section class="video-section">
+      <div class="video-card">
+        <div class="video-wrapper" id="videoWrapper">
+          <!-- Hidden video element capturing webcam -->
+          <video id="webcam" playsinline autoplay muted></video>
+          
+          <!-- Drawing canvas for landmarks and HUD overlays -->
+          <canvas id="outputCanvas"></canvas>
+
+          <!-- Warning Overlays -->
+          <div class="overlay-warning hidden" id="faceMissingWarning">
+            <div class="warning-box">
+              <i class="fa-solid fa-triangle-exclamation warning-icon"></i>
+              <h2>WARNING: Face Covered or Not Detected!</h2>
+              <p>Please face the camera with good lighting to resume focus monitoring.</p>
+            </div>
+          </div>
+
+          <div class="overlay-alert hidden" id="sleepAlertOverlay">
+            <div class="alert-box">
+              <i class="fa-solid fa-bell alert-icon"></i>
+              <h2>WAKE UP! FOCUS ON STUDYING!</h2>
+              <p>Prolonged eye closure detected.</p>
+            </div>
+          </div>
+
+          <!-- Video Start Placeholder -->
+          <div class="start-placeholder" id="startPlaceholder">
+            <div class="placeholder-content">
+              <div class="pulse-ring">
+                <i class="fa-solid fa-video"></i>
+              </div>
+              <h3>Camera Access Required</h3>
+              <p>Your video stays 100% private in your browser. No video is ever recorded or uploaded.</p>
+              <button class="btn btn-primary btn-lg" id="startCameraBtn">
+                <i class="fa-solid fa-play"></i> Start Focus Session
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Top Telemetry Overlay -->
+          <div class="hud-top-bar" id="hudTopBar">
+            <div class="hud-item">
+              <span class="hud-label">FPS</span>
+              <span class="hud-value" id="fpsDisplay">0.0</span>
+            </div>
+            <div class="hud-item">
+              <span class="hud-label">AVG EAR</span>
+              <span class="hud-value" id="avgEarDisplay">0.00</span>
+            </div>
+            <div class="hud-item">
+              <span class="hud-label">L / R EAR</span>
+              <span class="hud-value" id="lrEarDisplay">0.00 / 0.00</span>
+            </div>
+          </div>
+
+          <!-- Sleep Timer Bottom Progress Bar -->
+          <div class="hud-bottom-bar" id="hudBottomBar">
+            <div class="timer-info">
+              <span>Sleep Timer</span>
+              <span id="sleepTimerText">0.0s / 3.0s</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="sleepProgressFill"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Video Control Bar -->
+        <div class="video-toolbar">
+          <button class="btn btn-primary" id="toggleMonitorBtn">
+            <i class="fa-solid fa-play" id="toggleIcon"></i>
+            <span id="toggleText">Start Monitor</span>
+          </button>
+          
+          <button class="btn btn-outline" id="flipCameraBtn">
+            <i class="fa-solid fa-arrows-rotate"></i> Mirror View
+          </button>
+
+          <button class="btn btn-outline" id="toggleLandmarksBtn">
+            <i class="fa-solid fa-draw-polygon"></i> <span id="landmarkToggleText">Hide Wireframe</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Real-Time Telemetry & Settings -->
+    <aside class="sidebar-section">
+      <!-- Session Analytics Card -->
+      <div class="card analytics-card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-chart-line"></i> Session Analytics</h3>
+          <button class="btn-icon" id="resetStatsBtn" title="Reset Statistics">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <span class="stat-label">Session Duration</span>
+            <span class="stat-value" id="sessionTimeDisplay">00:00</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Focus Score</span>
+            <span class="stat-value text-accent" id="focusScoreDisplay">100%</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Drowsy Alerts</span>
+            <span class="stat-value text-danger" id="alertCountDisplay">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Attentiveness</span>
+            <span class="stat-value text-success" id="stateBadgeDisplay">Focused</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time EAR Diagnostic Gauge -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-gauge-high"></i> Eye Aperture Gauge</h3>
+          <span class="ear-indicator" id="earStateBadge">Normal</span>
+        </div>
+        <div class="gauge-container">
+          <div class="ear-meter-bar">
+            <div class="ear-threshold-marker" id="earThresholdMarker" style="left: 40%;"></div>
+            <div class="ear-meter-fill" id="earMeterFill" style="width: 0%;"></div>
+          </div>
+          <div class="gauge-labels">
+            <span>Closed (0.0)</span>
+            <span class="threshold-label" id="thresholdLabel">Threshold: 0.20</span>
+            <span>Open (0.5)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sensitivity & Alert Controls -->
+      <div class="card settings-card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-sliders"></i> Parameters & Alerts</h3>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="earThresholdSlider">EAR Alert Threshold</label>
+            <span class="control-val" id="earThresholdVal">0.20</span>
+          </div>
+          <input type="range" id="earThresholdSlider" min="0.10" max="0.35" step="0.01" value="0.20">
+          <p class="control-hint">Higher values detect drowsy eyes sooner; lower values reduce false alarms.</p>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="sleepLimitSlider">Closed Time Limit</label>
+            <span class="control-val" id="sleepLimitVal">3.0s</span>
+          </div>
+          <input type="range" id="sleepLimitSlider" min="1.0" max="6.0" step="0.5" value="3.0">
+          <p class="control-hint">Continuous seconds of closed eyes required to trigger the voice alert.</p>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="voiceAlertToggle">Voice Alert (TTS)</label>
+            <input type="checkbox" id="voiceAlertToggle" checked class="toggle-checkbox">
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="audioBeepToggle">Audio Alarm Chime</label>
+            <input type="checkbox" id="audioBeepToggle" checked class="toggle-checkbox">
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <p>Powered by MediaPipe Face Mesh & WebAssembly &bull; Built with Privacy First</p>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
