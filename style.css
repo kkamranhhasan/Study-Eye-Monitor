@@ -626,6 +626,35 @@ body {
   margin-top: 0.3rem;
 }
 
+.sound-select-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.custom-select {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  padding: 0.55rem 0.8rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.custom-select:focus {
+  border-color: var(--accent-cyan);
+}
+
+.custom-select option {
+  background: #111827;
+  color: var(--text-main);
+}
+
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;

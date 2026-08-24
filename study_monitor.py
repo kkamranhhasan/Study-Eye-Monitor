@@ -91,12 +91,13 @@ class VoiceAlertManager:
     Manages non-blocking text-to-speech and audio alerts using a dedicated background thread.
     Prevents OpenCV main capture loop stutter and plays custom audio alerts.
     """
-    def __init__(self, speech_cooldown: float = 4.0, sound_file: str = "alert.webm"):
+    def __init__(self, speech_cooldown: float = 4.0, sound_files: Optional[List[str]] = None):
         self.speech_cooldown = speech_cooldown
-        self.sound_file = sound_file
+        self.sound_files = sound_files or ["alert2.webm", "alert.webm"]
         self.alert_queue: queue.Queue = queue.Queue(maxsize=1)
         self.is_running = True
         self.last_speech_time = 0.0
+        self.sound_idx = 0
         self.lock = threading.Lock()
 
         self.worker_thread = threading.Thread(target=self._speech_worker, daemon=True)
@@ -118,11 +119,13 @@ class VoiceAlertManager:
                 if message is None:
                     break
                 
-                # 1. Play custom sound file if exists
-                if os.path.exists(self.sound_file):
+                # 1. Play custom sound file if exists (alternating between available sounds)
+                chosen_sound = self.sound_files[self.sound_idx % len(self.sound_files)]
+                self.sound_idx += 1
+
+                if os.path.exists(chosen_sound):
                     try:
-                        # On macOS, afplay plays audio instantly in background
-                        subprocess.run(["afplay", self.sound_file], timeout=5)
+                        subprocess.run(["afplay", chosen_sound], timeout=5)
                     except Exception as e:
                         print(f"[WARNING] afplay audio playback failed: {e}")
 

@@ -104,26 +104,54 @@ const elements = {
   sleepLimitSlider: document.getElementById('sleepLimitSlider'),
   sleepLimitVal: document.getElementById('sleepLimitVal'),
   voiceAlertToggle: document.getElementById('voiceAlertToggle'),
-  audioBeepToggle: document.getElementById('audioBeepToggle')
+  audioBeepToggle: document.getElementById('audioBeepToggle'),
+  soundSelect: document.getElementById('soundSelect'),
+  previewSoundBtn: document.getElementById('previewSoundBtn')
 };
 
-// Custom Audio File (`alert.webm` from YouTube)
-const customAlertAudio = new Audio('alert.webm');
-customAlertAudio.preload = 'auto';
+// Custom Audio Library
+const soundLibrary = {
+  'alert.webm': new Audio('alert.webm'),
+  'alert2.webm': new Audio('alert2.webm')
+};
+
+// Preload audio files
+Object.values(soundLibrary).forEach(audio => {
+  audio.preload = 'auto';
+});
 
 function playAlertSound() {
   if (!state.audioBeepEnabled) return;
-  try {
-    customAlertAudio.currentTime = 0;
-    const playPromise = customAlertAudio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(error => {
-        console.warn("Custom audio playback failed, falling back to synthesizer chime:", error);
-        playAlertChime();
-      });
+  
+  const selectedSound = elements.soundSelect ? elements.soundSelect.value : 'alert2.webm';
+
+  if (selectedSound === 'chime') {
+    playAlertChime();
+    return;
+  }
+
+  let audioFile = selectedSound;
+  if (selectedSound === 'random') {
+    const keys = ['alert.webm', 'alert2.webm'];
+    audioFile = keys[Math.floor(Math.random() * keys.length)];
+  }
+
+  const audioToPlay = soundLibrary[audioFile] || soundLibrary['alert2.webm'];
+  if (audioToPlay) {
+    try {
+      audioToPlay.currentTime = 0;
+      const playPromise = audioToPlay.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.warn("Custom audio playback failed, falling back to synthesizer chime:", error);
+          playAlertChime();
+        });
+      }
+    } catch (e) {
+      console.warn("Audio play error:", e);
+      playAlertChime();
     }
-  } catch (e) {
-    console.warn("Audio play error:", e);
+  } else {
     playAlertChime();
   }
 }
@@ -526,6 +554,10 @@ elements.toggleLandmarksBtn.addEventListener('click', () => {
 
 elements.testVoiceBtn.addEventListener('click', () => {
   triggerVoiceAlert("Voice test: Study focus alerts are operational!");
+});
+
+elements.previewSoundBtn.addEventListener('click', () => {
+  playAlertSound();
 });
 
 elements.resetStatsBtn.addEventListener('click', () => {

@@ -209,6 +209,23 @@
 
         <div class="control-group">
           <div class="control-label-row">
+            <label for="soundSelect">Alert Sound Effect</label>
+          </div>
+          <div class="sound-select-row">
+            <select id="soundSelect" class="custom-select">
+              <option value="alert.webm">Sound 1 (Short 1)</option>
+              <option value="alert2.webm" selected>Sound 2 (Short 2)</option>
+              <option value="random">Shuffle (Sound 1 & 2)</option>
+              <option value="chime">Synthesizer Chime</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" id="previewSoundBtn" title="Play sound preview">
+              <i class="fa-solid fa-play"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
             <label for="voiceAlertToggle">Voice Alert (TTS)</label>
             <input type="checkbox" id="voiceAlertToggle" checked class="toggle-checkbox">
           </div>
