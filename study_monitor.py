@@ -39,8 +39,8 @@ class MonitorConfig:
 
     # Detection & EAR Thresholds
     EAR_THRESHOLD: float = 0.20          # Threshold below which eyes are considered closed
-    CLOSED_TIME_LIMIT: float = 3.0       # Duration (seconds) of closed eyes before triggering alert
-    SPEECH_COOLDOWN: float = 4.0         # Minimum seconds between repeated voice alerts
+    CLOSED_TIME_LIMIT: float = 1.5       # Duration (seconds) of closed eyes before triggering alert (reduced)
+    SPEECH_COOLDOWN: float = 3.0         # Minimum seconds between repeated voice alerts
     
     # Model Settings
     MODEL_PATH: str = "face_landmarker.task"
@@ -541,8 +541,8 @@ class StudyFocusMonitor:
 if __name__ == "__main__":
     config = MonitorConfig(
         EAR_THRESHOLD=0.20,
-        CLOSED_TIME_LIMIT=3.0,
-        SPEECH_COOLDOWN=4.0
+        CLOSED_TIME_LIMIT=1.5,
+        SPEECH_COOLDOWN=3.0
     )
     monitor = StudyFocusMonitor(config=config)
     monitor.run()

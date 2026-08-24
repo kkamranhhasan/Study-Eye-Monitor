@@ -35,7 +35,7 @@ const state = {
   
   // User Configurable Parameters
   earThreshold: 0.20,
-  sleepLimitSeconds: 3.0,
+  sleepLimitSeconds: 1.5,
   voiceAlertEnabled: true,
   audioBeepEnabled: true,
 

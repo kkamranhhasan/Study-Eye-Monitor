@@ -108,7 +108,7 @@
           <div class="hud-bottom-bar" id="hudBottomBar">
             <div class="timer-info">
               <span>Sleep Timer</span>
-              <span id="sleepTimerText">0.0s / 3.0s</span>
+              <span id="sleepTimerText">0.0s / 1.5s</span>
             </div>
             <div class="progress-track">
               <div class="progress-fill" id="sleepProgressFill"></div>
@@ -201,9 +201,9 @@
         <div class="control-group">
           <div class="control-label-row">
             <label for="sleepLimitSlider">Closed Time Limit</label>
-            <span class="control-val" id="sleepLimitVal">3.0s</span>
+            <span class="control-val" id="sleepLimitVal">1.5s</span>
           </div>
-          <input type="range" id="sleepLimitSlider" min="1.0" max="6.0" step="0.5" value="3.0">
+          <input type="range" id="sleepLimitSlider" min="0.5" max="4.0" step="0.1" value="1.5">
           <p class="control-hint">Continuous seconds of closed eyes required to trigger the voice alert.</p>
         </div>
 
